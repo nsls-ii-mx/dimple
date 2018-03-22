@@ -132,7 +132,7 @@ def dimple(wf, opt):
         f_mtz = "amplit.mtz"
         wf.temporary_files.add(f_mtz)
         i_sigi_cols = _find_i_sigi_columns(mtz_meta, opt)
-        if opt.ItoF_prog == 'ctruncate' or (opt.ItoF_prog is None and opt.slow):
+        if opt.ItoF_prog == 'ctruncate' or (opt.ItoF_prog is None and opt.slow and opt.slow > 0):
             wf.ctruncate(hklin=reindexed_mtz, hklout=f_mtz,
                          colin="/*/*/[%s,%s]" % i_sigi_cols).run()
         else:
@@ -157,7 +157,13 @@ def dimple(wf, opt):
     elif pdb_meta.symmetry != reindexed_mtz_meta.symmetry:
         comment("\nDifferent space groups.")
     else:
-        comment("\nRigid-body refinement with resolution 3.5 A, 10 cycles.")
+        if opt.slow < 0:
+            if opt.slow <  -1:
+                comment("\nRigid-body refinement with resolution 3.9 A, 2 cycles.")
+            else:
+                comment("\nRigid-body refinement with resolution 3.75 A, 4 cycles.")
+        else:
+            comment("\nRigid-body refinement with resolution 3.5 A, 10 cycles.")
         if 'aa_count' in rw_data and 'water_count' in rw_data:
             if rw_data['aa_count'] != 0:
                 comment(" %.1f waters/aa." % (rw_data['water_count'] /
@@ -166,12 +172,25 @@ def dimple(wf, opt):
                 comment(' %d/0 waters/aa.' % rw_data['water_count'])
         wf.temporary_files |= {"refmacRB.pdb", "refmacRB.mtz"}
         # it may fail because of "Disagreement between mtz and pdb"
-        wf.refmac5(hklin=f_mtz, xyzin=rb_xyzin,
+        if opt.slow > -1:
+            wf.refmac5(hklin=f_mtz, xyzin=rb_xyzin,
                    hklout="refmacRB.mtz", xyzout="refmacRB.pdb",
                    labin=refmac_labin_nofree,
                    libin=None,
-                   keys="""refinement type rigidbody resolution 15 3.5
-                           rigidbody ncycle 10""").run(may_fail=True)
+                   keys="""refinement type rigidbody resolution 15 3.5 rigidbody ncycle 10""").run(may_fail=True)
+        else:
+            if opt.slow == -1:
+                wf.refmac5(hklin=f_mtz, xyzin=rb_xyzin,
+                   hklout="refmacRB.mtz", xyzout="refmacRB.pdb",
+                   labin=refmac_labin_nofree,
+                   libin=None,
+                   keys="""refinement type rigidbody resolution 15 3.75 rigidbody ncycle 4""").run(may_fail=True)
+            else:
+                wf.refmac5(hklin=f_mtz, xyzin=rb_xyzin,
+                   hklout="refmacRB.mtz", xyzout="refmacRB.pdb",
+                   labin=refmac_labin_nofree,
+                   libin=None,
+                   keys="""refinement type rigidbody resolution 15 3.9 rigidbody ncycle 2""").run(may_fail=True)
         # if the error is caused by mtz/pdb disagreement, continue with MR
         if wf.jobs[-1].exit_status != 0:
             comment("\nTry MR.")
@@ -295,7 +314,10 @@ def dimple(wf, opt):
     if opt.freecolumn_val:
         restr_ref_keys += "free %s\n" % opt.freecolumn_val
     refmac_labin = "%s FREE=%s" % (refmac_labin_nofree, free_col)
-    comment("\nRestrained refinement, %d+%d cycles." % (opt.jelly,
+    jcycles = 0
+    if opt.jelly > 0:
+        jcycles = opt.jelly
+    comment("\nRestrained refinement, %d+%d cycles." % (jcycles,
                                                         opt.restr_cycles))
     if opt.jelly:
         wf.temporary_files |= {"jelly.pdb", "jelly.mtz"}
@@ -550,8 +572,10 @@ def parse_dimple_commands(args):
     parser.add_argument('pos_arg3')
     parser.add_argument('more_args', nargs='*')
     group1 = parser.add_argument_group('most commonly used options')
-    group1.add_argument('-s', '--slow', action='count',
+    group1.add_argument('-s', '--slow', action='count', dest='slow',
                         help='more refinement, etc. (can be used 2x)')
+    group1.add_argument('--fast', action='count', dest='fast',
+                        help='less refinement, etc. (can be used 2x)')
     group1.add_argument('-M', '--mr-when-r', type=float, default=0.4,
                         metavar='NUM',
                         help='threshold for Molecular Replacement'+dstr)
@@ -588,10 +612,10 @@ def parse_dimple_commands(args):
     group3 = parser.add_argument_group('options customizing the run')
     group3.add_argument('--no-hetatm', action='store_true',
                         help='remove HETATM atoms from the given model')
-    group3.add_argument('--jelly', metavar='N_ITER', type=int,
+    group3.add_argument('--jelly', metavar='N_ITER', type=int, dest='jelly',
                     help='run refmac jelly-body before the final refinement')
     group3.add_argument('--reso', type=float, help='limit the resolution [A]')
-    group3.add_argument('--restr-cycles', metavar='N', type=int,
+    group3.add_argument('--restr-cycles', metavar='N', type=int, dest='restr_cycles',
                         help='cycles of refmac final refinement (default: 8)')
     group3.add_argument('--weight', metavar='VALUE', type=float,
                         help='refmac matrix weight (default: auto-weight)')
@@ -641,6 +665,14 @@ def parse_dimple_commands(args):
         sys.exit(1)
 
     opt = parser.parse_args(args)
+    if opt.slow != None and opt.fast !=None:
+        put_error('Do not use both --fast and --slow')
+        sys.exit(1)
+    else:
+        if opt.slow is None:
+            opt.slow = 0
+        if opt.fast is None:
+            opt.fast = 0
     all_args = [opt.pos_arg1, opt.pos_arg2, opt.pos_arg3] + opt.more_args
     # all_args should be one mtz, one or more pdbs and output_dir
     opt.output_dir = all_args.pop()
@@ -730,12 +762,21 @@ def parse_dimple_commands(args):
     # set defaults that depend on the 'slow' level
     if opt.slow is None:
         opt.slow = 0
+    if opt.fast is None:
+        opt.fast = 0
+    if opt.fast > 0:
+        opt.slow = -opt.fast
+    if opt.slow < -2:
+        opt.slow = -2
     elif opt.slow > 2:
         opt.slow = 2
     if opt.restr_cycles is None:
-        opt.restr_cycles = [8, 10, 12][opt.slow]
+        opt.restr_cycles = [1, 3, 8, 10, 12][opt.slow+2]
     if opt.jelly is None:
-        opt.jelly = [4, 10, 100][opt.slow]
+        opt.jelly = [None, 2, 4, 10, 100][opt.slow+2]
+    print  "opt.slow: ",opt.slow, \
+           " opt.fast: ",opt.fast, \
+           " opt.restr_cycles: ",opt.restr_cycles," opt.jelly: ",opt.jelly
 
     return opt
 
