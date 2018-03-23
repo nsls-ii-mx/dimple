@@ -1,0 +1,15 @@
+#!/bin/sh
+
+this_dir="$(cd "$(dirname "$0")" && pwd)"
+#echo "this_dir: $this_dir"
+if [ -e "$this_dir/main.py" ] && [ "$this_dir" != "$CCP4/bin" ]; then
+  # development (source tree) version
+  if [ -e "$CCP4/bin/ccp4-python" ]; then
+    exec "$CCP4/bin/ccp4-python" "$this_dir/main.py" --fast --fast "$@"
+  else
+    exec python2.7 "$this_dir/main.py" --fast --fast "$@"
+  fi
+else
+  # installed module
+  exec "$CCP4/bin/ccp4-python" -m dimple --fast --fast "$@"
+fi

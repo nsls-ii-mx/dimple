@@ -159,9 +159,9 @@ def dimple(wf, opt):
     else:
         if opt.slow < 0:
             if opt.slow <  -1:
-                comment("\nRigid-body refinement with resolution 3.9 A, 2 cycles.")
+                comment("\nRigid-body refinement with resolution 3.5 A, 2 cycles.")
             else:
-                comment("\nRigid-body refinement with resolution 3.75 A, 4 cycles.")
+                comment("\nRigid-body refinement with resolution 3.5 A, 4 cycles.")
         else:
             comment("\nRigid-body refinement with resolution 3.5 A, 10 cycles.")
         if 'aa_count' in rw_data and 'water_count' in rw_data:
@@ -177,20 +177,26 @@ def dimple(wf, opt):
                    hklout="refmacRB.mtz", xyzout="refmacRB.pdb",
                    labin=refmac_labin_nofree,
                    libin=None,
-                   keys="""refinement type rigidbody resolution 15 3.5 rigidbody ncycle 10""").run(may_fail=True)
+                   keys="refinement type rigidbody\n"+
+                        "resolution 15 3.5\n"+
+                        "rigidbody ncycle 10").run(may_fail=True)
         else:
             if opt.slow == -1:
                 wf.refmac5(hklin=f_mtz, xyzin=rb_xyzin,
                    hklout="refmacRB.mtz", xyzout="refmacRB.pdb",
                    labin=refmac_labin_nofree,
                    libin=None,
-                   keys="""refinement type rigidbody resolution 15 3.75 rigidbody ncycle 4""").run(may_fail=True)
+                   keys="refinement type rigidbody\n"+
+                        "resolution 15 3.5\n"+
+                        "rigidbody ncycle 4").run(may_fail=True)
             else:
                 wf.refmac5(hklin=f_mtz, xyzin=rb_xyzin,
                    hklout="refmacRB.mtz", xyzout="refmacRB.pdb",
                    labin=refmac_labin_nofree,
                    libin=None,
-                   keys="""refinement type rigidbody resolution 15 3.9 rigidbody ncycle 2""").run(may_fail=True)
+                   keys="refinement type rigidbody\n"+
+                        "resolution 15 3.5\n"+ 
+                        "rigidbody ncycle 2").run(may_fail=True)
         # if the error is caused by mtz/pdb disagreement, continue with MR
         if wf.jobs[-1].exit_status != 0:
             comment("\nTry MR.")
@@ -771,12 +777,12 @@ def parse_dimple_commands(args):
     elif opt.slow > 2:
         opt.slow = 2
     if opt.restr_cycles is None:
-        opt.restr_cycles = [1, 3, 8, 10, 12][opt.slow+2]
+        opt.restr_cycles = [2, 3 , 8, 10, 12][opt.slow+2]
     if opt.jelly is None:
-        opt.jelly = [None, 2, 4, 10, 100][opt.slow+2]
-    print  "opt.slow: ",opt.slow, \
-           " opt.fast: ",opt.fast, \
-           " opt.restr_cycles: ",opt.restr_cycles," opt.jelly: ",opt.jelly
+        opt.jelly = [None, None, 4, 10, 100][opt.slow+2]
+    #print  "opt.slow: ",opt.slow, \
+    #       " opt.fast: ",opt.fast, \
+    #       " opt.restr_cycles: ",opt.restr_cycles," opt.jelly: ",opt.jelly
 
     return opt
 
