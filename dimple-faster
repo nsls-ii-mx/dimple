@@ -1,6 +1,12 @@
 #!/bin/sh
 
 this_dir="$(cd "$(dirname "$0")" && pwd)"
+
+#optional initialization via dimple.ini
+if [ -x  "${this_dir}/dimple.ini" ]; then
+    source "${this_dir}/dimple.ini"
+fi
+
 #echo "this_dir: $this_dir"
 if [ -e "$this_dir/main.py" ] && [ "$this_dir" != "$CCP4/bin" ]; then
   # development (source tree) version
