@@ -50,3 +50,23 @@ email wojdyr@gmail.com or
 ---
 
 Made in Diamond Light Source and in CCP4-Harwell.
+
+# Notes for github nsls-ii-mx dimple
+
+1.  If an optional dimple.ini file is executable and present in the directory
+with the dimple binary, it will be sourced before the run.  There is an example
+dimple.ini in the kit.  It should ne edited for your own site.
+
+2.  A --fast option has been added, which reduces the number of passes, reducing
+execution time, but risking ess accuracy.  Up to two --fast options may be used.
+This is, the speed choices or dimple in order from fastest to slowest are
+  dimple --fast --fast
+  dimple --fast
+  dimple
+  dimple --slow
+  dimple --slow --slow
+
+3.  Three versions of dimple are included in the kit
+  dimple-faster (equivalent to  dimple --fast --fast)
+  dimple-fast   (equivalent to  dimple --fast)
+  dimple 
