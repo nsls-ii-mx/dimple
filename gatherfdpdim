@@ -1,0 +1,93 @@
+#!/bin/bash
+
+if [ "${1}xx" == "--helpxx" ];
+  then
+    echo "gatherfdpdim -- gather files from fast_dp and dimple runs"
+    echo "usage:"
+    echo "    gatherfdpdim --help      print this message"
+    echo "    gatherfdpdim             gather from current directory and below"
+    echo "    gatherfdp projectdir     gather from projectdir and below"
+    echo " creates ./fast_dp_dir and ./dimple_dir"
+    echo " looks for fast_dp.log, fast_dp.mtx, final.mtz, final.pdb, and screen.log"
+    echo " and puts the first two into fast_dp_dir and the rest in dimple_dir"
+    echo " naming the files by full path names with any embedded solidus changed"
+    echo " to hyphens"
+
+    exit
+fi
+
+if [ "${1}xx" == "xx" ];
+  then
+    projectdir=`pwd`
+  else
+    projectdir="$1"
+fi
+
+echo fetching from $projectdir
+
+declare -a found
+
+mkdir -p fast_dp_dir
+mkdir -p dimple_dir
+
+found=$( (cd $projectdir; find . -name fast_dp.log)|tr " " "\n")
+foundarray=(${found// / })
+#echo $found
+for fndfile  in ${foundarray[@]} ;  do
+    echo $fndfile
+    abspath=${projectdir}/${fndfile}
+    abspath=$( cd $(dirname $abspath); pwd)/$( basename $fndfile)
+    targetfile=fast_dp_dir/`echo $fndfile|sed 's/\//-/g'|sed 's/^\.-//'`
+    echo cp -p "$abspath" "$targetfile"
+    cp -p "$abspath" "$targetfile"
+done
+
+found=$( (cd $projectdir; find . -name fast_dp.mtz)|tr " " "\n")
+foundarray=(${found// / })
+#echo $found
+for fndfile  in ${foundarray[@]} ;  do
+    echo $fndfile
+    abspath=${projectdir}/${fndfile}
+    abspath=$( cd $(dirname $abspath); pwd)/$( basename $fndfile)
+    targetfile=fast_dp_dir/`echo $fndfile|sed 's/\//-/g'|sed 's/^\.-//'`
+    echo cp -p "$abspath" "$targetfile"
+    cp -p "$abspath" "$targetfile"
+done
+
+found=$( (cd $projectdir; find . -name final.mtz)|tr " " "\n")
+foundarray=(${found// / })
+#echo $found
+for fndfile  in ${foundarray[@]} ;  do
+    echo $fndfile
+    abspath=${projectdir}/${fndfile}
+    abspath=$( cd $(dirname $abspath); pwd)/$( basename $fndfile)
+    targetfile=dimple_dir/`echo $fndfile|sed 's/\//-/g'|sed 's/^\.-//'`
+    echo cp -p "$abspath" "$targetfile"
+    cp -p "$abspath" "$targetfile"
+done
+
+found=$( (cd $projectdir; find . -name final.pdb)|tr " " "\n")
+foundarray=(${found// / })
+#echo $found
+for fndfile  in ${foundarray[@]} ;  do
+    echo $fndfile
+    abspath=${projectdir}/${fndfile}
+    abspath=$( cd $(dirname $abspath); pwd)/$( basename $fndfile)
+    targetfile=dimple_dir/`echo $fndfile|sed 's/\//-/g'|sed 's/^\.-//'`
+    echo cp -p "$abspath" "$targetfile"
+    cp -p "$abspath" "$targetfile"
+done
+
+found=$( (cd $projectdir; find . -name screen.log)|tr " " "\n")
+foundarray=(${found// / })
+#echo $found
+for fndfile  in ${foundarray[@]} ;  do
+    echo $fndfile
+    abspath=${projectdir}/${fndfile}
+    abspath=$( cd $(dirname $abspath); pwd)/$( basename $fndfile)
+    targetfile=dimple_dir/`echo $fndfile|sed 's/\//-/g'|sed 's/^\.-//'`
+    echo cp -p "$abspath" "$targetfile"
+    cp -p "$abspath" "$targetfile"
+done
+
+exit
