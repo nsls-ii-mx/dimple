@@ -1,6 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 
 this_dir="$(cd "$(dirname "$0")" && pwd)"
+. $this_dir/dimple.ini
+export PATH=$this_dir:$PATH
+
 if [ -e "$this_dir/main.py" ] && [ "$this_dir" != "$CCP4/bin" ]; then
   # development (source tree) version
   if [ -e "$CCP4/bin/ccp4-python" ]; then
